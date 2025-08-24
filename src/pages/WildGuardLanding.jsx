@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Shield, Smartphone, Map, Satellite, Users, Bell, TrendingUp, CheckCircle, Menu, X } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import sightings from '../Dataset/wildlife_sightings.json'
 
 // Navbar Component
 const Navbar = () => {
@@ -30,7 +31,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-2">
             <Shield className="h-8 w-8 text-emerald-600" />
-            <span className="text-2xl font-bold text-emerald-800">WildGuard AI</span>
+            <span className="text-2xl font-bold text-amber-300">MAITREI</span>
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
@@ -403,6 +404,9 @@ const WildGuardLanding = () => {
                 </div>
               </div>
             </div>
+
+
+
           </div>
         </div>
       </section>
@@ -414,7 +418,7 @@ const WildGuardLanding = () => {
             Ready to Protect Your Community?
           </h2>
           <p className="text-xl text-gray-300 mb-8">
-            Join thousands of communities already using WildGuard AI to prevent conflicts and save lives.
+            Join thousands of communities already using MAITREI AI to prevent conflicts and save lives.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={() => navigate("/dashboard")} className="bg-emerald-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center">
@@ -435,13 +439,13 @@ const WildGuardLanding = () => {
             <div className="col-span-2">
               <div className="flex items-center space-x-2 mb-4">
                 <Shield className="h-8 w-8 text-emerald-600" />
-                <span className="text-2xl font-bold text-emerald-800">WildGuard AI</span>
+                <span className="text-2xl font-bold text-emerald-800">MAITREI AI</span>
               </div>
               <p className="text-gray-600 mb-4">
                 Protecting communities and wildlife through AI-powered conflict prediction and prevention.
               </p>
               <div className="text-sm text-gray-500">
-                © 2025 WildGuard AI. All rights reserved.
+                © 2025 Maitrei AI. All rights reserved.
               </div>
             </div>
             
