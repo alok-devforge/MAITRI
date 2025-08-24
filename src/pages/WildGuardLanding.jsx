@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Shield, Smartphone, Map, Satellite, Users, Bell, TrendingUp, CheckCircle, Menu, X } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import sightings from '../Dataset/wildlife_sightings.json'
-
+import SimpleMapComponent from '../components/SimpleMapComponent'
 // Navbar Component
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -422,9 +422,7 @@ const WildGuardLanding = () => {
               <div className="bg-white rounded-2xl p-8 shadow-xl">
                 <h3 className="text-2xl font-semibold text-gray-900 mb-6">Resource Safety Map</h3>
                 <div className="bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg h-64 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23059669' fill-opacity='0.1'%3E%3Ccircle cx='3' cy='3' r='1'/%3E%3Ccircle cx='13' cy='13' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                  }}></div>
+                  <div className="absolute inset-0" > <SimpleMapComponent/></div>
                   <div className="text-center z-10">
                     <Map className="h-16 w-16 text-emerald-600 mx-auto mb-4" />
                     <p className="text-gray-600">Interactive map showing safe zones, high-risk areas, and recommended routes</p>
