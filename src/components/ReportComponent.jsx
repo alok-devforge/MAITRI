@@ -8,7 +8,7 @@ const NativeCamera = ({ onCapture, onClose, className }) => {
     const [stream, setStream] = useState(null);
     const [isReady, setIsReady] = useState(false);
     const [error, setError] = useState(null);
-    const [facingMode, setFacingMode] = useState('environment'); // 'user' for front, 'environment' for back
+    const [facingMode, setFacingMode] = useState('environment');
 
     useEffect(() => {
         startCamera();
@@ -19,12 +19,10 @@ const NativeCamera = ({ onCapture, onClose, className }) => {
         try {
             setError(null);
             
-            // Stop existing stream if any
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
 
-            // Request camera access with constraints
             const constraints = {
                 video: {
                     width: { ideal: 1280, max: 1920 },
@@ -84,17 +82,13 @@ const NativeCamera = ({ onCapture, onClose, className }) => {
         const canvas = canvasRef.current || document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Set canvas dimensions to match video
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        // Draw the video frame to canvas
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Convert to data URL
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         
-        // Create image object with metadata
         const capturedImage = {
             id: Date.now(),
             src: dataUrl,
@@ -103,7 +97,6 @@ const NativeCamera = ({ onCapture, onClose, className }) => {
             height: canvas.height
         };
 
-        // Call the onCapture callback
         if (onCapture) {
             onCapture(capturedImage);
         }
@@ -152,10 +145,8 @@ const NativeCamera = ({ onCapture, onClose, className }) => {
 
     return (
         <div className="fixed inset-0 bg-black z-50 flex flex-col">
-            {/* Hidden canvas for image capture */}
             <canvas ref={canvasRef} style={{ display: 'none' }} />
             
-            {/* Camera Header */}
             <div className="flex justify-between items-center p-4 bg-black text-white">
                 <button
                     onClick={handleClose}
@@ -173,7 +164,6 @@ const NativeCamera = ({ onCapture, onClose, className }) => {
                 </button>
             </div>
 
-            {/* Camera View */}
             <div className="flex-1 relative overflow-hidden">
                 <video
                     ref={videoRef}
@@ -191,7 +181,6 @@ const NativeCamera = ({ onCapture, onClose, className }) => {
                     </div>
                 )}
 
-                {/* Capture Button */}
                 {isReady && (
                     <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
                         <button
@@ -205,10 +194,8 @@ const NativeCamera = ({ onCapture, onClose, className }) => {
                     </div>
                 )}
 
-                {/* Camera Guidelines */}
                 {isReady && (
                     <div className="absolute inset-0 pointer-events-none">
-                        {/* Grid lines for better composition */}
                         <div className="absolute inset-4">
                             <div className="w-full h-full border border-white border-opacity-30">
                                 <div className="absolute top-1/3 left-0 right-0 border-t border-white border-opacity-20"></div>
@@ -224,13 +211,9 @@ const NativeCamera = ({ onCapture, onClose, className }) => {
     );
 };
 
-// Mock database of phone numbers (in a real app, this would come from your backend)
-const PHONE_DATABASE = [
-    '+1234567890',
-    '+1987654321',
-    '+1122334455',
-    '+1555666777'
-];
+// Configuration - Update these based on your setup
+const API_BASE_URL = 'http://localhost:5000'; // Your backend URL
+const PHONE_DATABASE = ['+919123605369']; // Should match your backend
 
 const BackButton = ({ onClick }) => (
     <button onClick={onClick} className="flex items-center text-slate-600 hover:text-slate-800 transition-colors mb-6">
@@ -245,6 +228,10 @@ const ReportComponent = ({ setCurrentRoute }) => {
     const [showSuccess, setShowSuccess] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
     const [capturedImages, setCapturedImages] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [debugInfo, setDebugInfo] = useState('');
+    const [submitError, setSubmitError] = useState('');
+    const [backendStatus, setBackendStatus] = useState({ online: false, checked: false });
     const [formData, setFormData] = useState({
         reporterName: '',
         reporterPhone: '',
@@ -257,7 +244,42 @@ const ReportComponent = ({ setCurrentRoute }) => {
         behavior: '',
         photos: []
     });
-    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Check backend connectivity on component mount
+    useEffect(() => {
+        checkBackendStatus();
+    }, []);
+
+    const checkBackendStatus = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/test`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                setBackendStatus({ 
+                    online: true, 
+                    checked: true, 
+                    message: data.message,
+                    twilioConfigured: data.twilioConfigured 
+                });
+                console.log('✅ Backend is online:', data);
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            console.error('❌ Backend connection failed:', error);
+            setBackendStatus({ 
+                online: false, 
+                checked: true, 
+                error: error.message 
+            });
+        }
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -267,15 +289,12 @@ const ReportComponent = ({ setCurrentRoute }) => {
         }));
     };
 
-    // Camera functions
     const handleCapture = (capturedImage) => {
         setCapturedImages(prev => [...prev, capturedImage]);
         setFormData(prev => ({
             ...prev,
             photos: [...prev.photos, capturedImage]
         }));
-        
-        // Show success feedback
         console.log('Photo captured successfully!');
     };
 
@@ -287,74 +306,112 @@ const ReportComponent = ({ setCurrentRoute }) => {
         }));
     };
 
-    const openCamera = () => {
-        setShowCamera(true);
-    };
-
-    const closeCamera = () => {
-        setShowCamera(false);
-    };
-
+    const openCamera = () => setShowCamera(true);
+    const closeCamera = () => setShowCamera(false);
     const handleInitialSubmit = () => {
         if (selectedAnimal) {
             setShowForm(true);
         }
     };
 
-    const simulateSMSService = async (phoneNumbers, message) => {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+    // Updated SMS function with proper error handling
+    const sendSMSAlert = async (messageContent) => {
+        const timestamp = new Date().toISOString();
+        setDebugInfo(`[${timestamp}] 🚀 Starting SMS send process...`);
         
-        console.log('SMS sent to:', phoneNumbers);
-        console.log('Message:', message);
-        return { success: true, sentCount: phoneNumbers.length };
-    };
-
-    const handleFormSubmit = async () => {
-        if (!isFormValid()) return;
-        setIsSubmitting(true);
-
         try {
-            const smsMessage = `🚨 WILDLIFE ALERT 🚨
-Animal: ${selectedAnimal}
-Location: ${formData.location}
-Date/Time: ${formData.date} at ${formData.time}
-Reported by: ${formData.reporterName}
-Count: ${formData.animalCount}
-Behavior: ${formData.behavior || 'Not specified'}
-Description: ${formData.description}
-
-Stay alert and follow safety protocols.`;
-
-            const result = await simulateSMSService(PHONE_DATABASE, smsMessage);
-            
-            if (result.success) {
-                setShowSuccess(true);
-                setTimeout(() => {
-                    setShowForm(false);
-                    setShowSuccess(false);
-                    setSelectedAnimal(null);
-                    setFormData({
-                        reporterName: '',
-                        reporterPhone: '',
-                        reporterEmail: '',
-                        location: '',
-                        date: '',
-                        time: '',
-                        description: '',
-                        animalCount: '1',
-                        behavior: '',
-                        photos: []
-                    });
-                    setCapturedImages([]);
-                }, 3000);
+            // Check if backend is online first
+            if (!backendStatus.online) {
+                throw new Error('Backend server is not available. Please ensure server is running on port 5000.');
             }
+
+            const requestUrl = `${API_BASE_URL}/send-sms`;
+            const requestBody = { message: messageContent };
+            
+            setDebugInfo(prev => prev + `\n[${timestamp}] 📡 Sending request to: ${requestUrl}`);
+            setDebugInfo(prev => prev + `\n[${timestamp}] 📝 Request body: ${JSON.stringify(requestBody, null, 2)}`);
+
+            const response = await fetch(requestUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            setDebugInfo(prev => prev + `\n[${timestamp}] 📥 Response received - Status: ${response.status}`);
+            setDebugInfo(prev => prev + `\n[${timestamp}] 📥 Response OK: ${response.ok}`);
+
+            // Get response text first
+            const responseText = await response.text();
+            setDebugInfo(prev => prev + `\n[${timestamp}] 📄 Raw response: ${responseText}`);
+
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+            } catch (parseError) {
+                throw new Error(`Invalid JSON response: ${responseText}`);
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${responseData.error || responseData.message || 'Unknown error'}`);
+            }
+
+            setDebugInfo(prev => prev + `\n[${timestamp}] ✅ Response Data: ${JSON.stringify(responseData, null, 2)}`);
+            
+            return responseData;
+
         } catch (error) {
-            console.error('Error sending SMS:', error);
-            alert('Failed to send notifications. Please try again.');
-        } finally {
-            setIsSubmitting(false);
+            const errorTimestamp = new Date().toISOString();
+            const errorMessage = error.message || 'Unknown error occurred';
+            
+            setDebugInfo(prev => prev + `\n[${errorTimestamp}] ❌ SMS Error: ${errorMessage}`);
+            
+            if (error.name === 'TypeError' && errorMessage.includes('Failed to fetch')) {
+                setDebugInfo(prev => prev + `\n[${errorTimestamp}] 🔗 Network Error: Cannot connect to backend server`);
+                setDebugInfo(prev => prev + `\n[${errorTimestamp}] 💡 Make sure your backend server is running on ${API_BASE_URL}`);
+            }
+            
+            console.error('SMS sending error:', error);
+            
+            return {
+                success: false,
+                error: errorMessage,
+                details: error.toString()
+            };
         }
     };
+
+    // Updated form submission with better error handling
+    const handleFormSubmit = async () => {
+  if (!isFormValid()) return; // don't submit if form invalid
+
+  setIsSubmitting(true);
+  try {
+    const response = await fetch("http://localhost:5000/send-sms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: formData.description, // 👈 send the textarea content
+      }),
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      alert("SMS sent successfully!");
+      setFormData({ ...formData, description: "" }); // clear description
+    } else {
+      alert("Failed to send SMS: " + data.error);
+    }
+  } catch (err) {
+    console.error("Error sending SMS:", err);
+    alert("Something went wrong while sending SMS");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
     const isFormValid = () => {
         return formData.reporterName && 
@@ -366,12 +423,7 @@ Stay alert and follow safety protocols.`;
     };
 
     if (showCamera) {
-        return (
-            <NativeCamera
-                onCapture={handleCapture}
-                onClose={closeCamera}
-            />
-        );
+        return <NativeCamera onCapture={handleCapture} onClose={closeCamera} />;
     }
 
     if (showSuccess) {
@@ -396,6 +448,55 @@ Stay alert and follow safety protocols.`;
         return (
             <div className="space-y-6">
                 <BackButton onClick={() => setShowForm(false)} />
+                
+                {/* Backend Status Indicator */}
+                {backendStatus.checked && (
+                    <div className={`p-4 rounded-lg border ${
+                        backendStatus.online 
+                            ? 'bg-green-50 border-green-200' 
+                            : 'bg-red-50 border-red-200'
+                    }`}>
+                        <div className="flex items-center space-x-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                                backendStatus.online ? 'bg-green-500' : 'bg-red-500'
+                            }`}></div>
+                            <span className={`text-sm font-medium ${
+                                backendStatus.online ? 'text-green-800' : 'text-red-800'
+                            }`}>
+                                Backend Status: {backendStatus.online ? 'Online' : 'Offline'}
+                            </span>
+                        </div>
+                        {!backendStatus.online && (
+                            <p className="text-red-600 text-sm mt-1">
+                                Please ensure your backend server is running on {API_BASE_URL}
+                            </p>
+                        )}
+                        {backendStatus.online && backendStatus.twilioConfigured === false && (
+                            <p className="text-yellow-600 text-sm mt-1">
+                                ⚠️ Twilio credentials not configured in backend
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Error Display */}
+                {submitError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h4 className="font-bold text-red-800 text-sm mb-2">Submission Error:</h4>
+                        <p className="text-red-600 text-sm">{submitError}</p>
+                    </div>
+                )}
+                
+                {/* Debug Info Panel - Remove this in production */}
+                {debugInfo && (
+                    <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
+                        <h4 className="font-bold text-sm mb-2">Debug Information:</h4>
+                        <pre className="text-xs whitespace-pre-wrap overflow-x-auto bg-white p-2 rounded border max-h-40 overflow-y-auto">
+                            {debugInfo}
+                        </pre>
+                    </div>
+                )}
+
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800 mb-2">Complete Your Report</h1>
                     <p className="text-slate-600">Animal: <span className="font-semibold text-emerald-600">{selectedAnimal}</span></p>
@@ -431,6 +532,7 @@ Stay alert and follow safety protocols.`;
                                     name="reporterPhone"
                                     value={formData.reporterPhone}
                                     onChange={handleInputChange}
+                                    placeholder="+91XXXXXXXXXX"
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                                     required
                                 />
@@ -564,7 +666,6 @@ Stay alert and follow safety protocols.`;
                             Photos
                         </label>
                         
-                        {/* Camera Button */}
                         <div className="space-y-4">
                             <button
                                 type="button"
@@ -575,7 +676,6 @@ Stay alert and follow safety protocols.`;
                                 <span className="text-slate-600">Open Camera to Take Photos</span>
                             </button>
 
-                            {/* Captured Images Display */}
                             {capturedImages.length > 0 && (
                                 <div>
                                     <p className="text-sm font-medium text-slate-700 mb-2">
@@ -612,33 +712,47 @@ Stay alert and follow safety protocols.`;
                     </div>
 
                     {/* Submit Button */}
-                    <div className="pt-4 border-t">
-                        <button
-                            type="button"
-                            onClick={handleFormSubmit}
-                            disabled={!isFormValid() || isSubmitting}
-                            className={`w-full py-4 rounded-lg font-medium transition-all flex items-center justify-center ${
-                                isFormValid() && !isSubmitting
-                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                            }`}
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                    Sending SMS Notifications...
-                                </>
-                            ) : (
-                                <>
-                                    <Send className="w-5 h-5 mr-2" />
-                                    Submit Report & Send SMS Alerts
-                                </>
-                            )}
-                        </button>
-                        <p className="text-xs text-slate-500 mt-2 text-center">
-                            This will send SMS notifications to {PHONE_DATABASE.length} registered contacts
-                        </p>
-                    </div>
+                   <div className="pt-4 border-t">
+  <button
+    type="button"
+    onClick={handleFormSubmit}
+    disabled={!isFormValid() || isSubmitting || !backendStatus.online}
+    className={`w-full py-4 rounded-lg font-medium transition-all flex items-center justify-center ${
+      isFormValid() && !isSubmitting && backendStatus.online
+        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+        : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+    }`}
+  >
+    {isSubmitting ? (
+      <>
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+        Sending SMS Notifications...
+      </>
+    ) : !backendStatus.online ? (
+      <>
+        <X className="w-5 h-5 mr-2" />
+        Backend Offline - Cannot Submit
+      </>
+    ) : (
+      <>
+        <Send className="w-5 h-5 mr-2" />
+        Submit Report & Send SMS Alerts
+      </>
+    )}
+  </button>
+
+  <p className="text-xs text-slate-500 mt-2 text-center">
+    This will send SMS notifications to {PHONE_DATABASE.length} registered contacts
+  </p>
+
+  {!backendStatus.online && (
+    <p className="text-xs text-red-500 mt-1 text-center">
+      Please start your backend server on {API_BASE_URL} to enable SMS functionality
+    </p>
+  )}
+
+</div>
+
                 </div>
             </div>
         );
@@ -647,6 +761,36 @@ Stay alert and follow safety protocols.`;
     return (
         <div className="space-y-6">
             <BackButton onClick={() => setCurrentRoute('/')} />
+            
+            {/* Backend Status Indicator */}
+            {backendStatus.checked && (
+                <div className={`p-3 rounded-lg border ${
+                    backendStatus.online 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-yellow-50 border-yellow-200'
+                }`}>
+                    <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${
+                            backendStatus.online ? 'bg-green-500' : 'bg-yellow-500'
+                        }`}></div>
+                        <span className={`text-sm ${
+                            backendStatus.online ? 'text-green-800' : 'text-yellow-800'
+                        }`}>
+                            {backendStatus.online 
+                                ? 'SMS service is online and ready' 
+                                : 'SMS service is offline - reports will be saved locally'
+                            }
+                        </span>
+                        <button
+                            onClick={checkBackendStatus}
+                            className="ml-auto text-xs px-2 py-1 rounded bg-white border hover:bg-gray-50"
+                        >
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div>
                 <h1 className="text-3xl font-bold text-slate-800 mb-2">Submit Report</h1>
                 <p className="text-slate-600">Report wildlife sightings to help our AI system</p>
