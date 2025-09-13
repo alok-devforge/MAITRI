@@ -427,22 +427,6 @@ const VoiceModeInterface = ({
                             Stop Recording
                         </button>
                     )}
-                    
-                    {/* Debug Button */}
-                    <button
-                        onClick={() => {
-                            console.log('Debug button clicked');
-                            console.log('Speech recognition available:', !!speechRecognition);
-                            console.log('Current listening state:', isListening);
-                            console.log('Voice mode active:', voiceMode);
-                            console.log('Current voice field:', currentVoiceField);
-                            console.log('Current voice step:', voiceStep);
-                            console.log('Location data:', locationData);
-                        }}
-                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all text-sm"
-                    >
-                        Debug
-                    </button>
                 </div>
             </div>
 
@@ -479,18 +463,6 @@ const VoiceModeInterface = ({
                     >
                         <SkipForward className="w-4 h-4 mr-2" />
                         Skip Question
-                    </button>
-                )}
-                
-                {finalTranscript && !isListening && (
-                    <button
-                        onClick={() => {
-                            setLiveTranscript('');
-                            setFinalTranscript('');
-                        }}
-                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all"
-                    >
-                        Clear & Retry
                     </button>
                 )}
                 
