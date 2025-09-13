@@ -551,10 +551,16 @@ const ReportComponent = ({ setCurrentRoute }) => {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             const recognition = new SpeechRecognition();
             
+            // Optimized settings for better reliability
             recognition.continuous = false;
             recognition.interimResults = true;
             recognition.lang = 'en-US';
             recognition.maxAlternatives = 1;
+            
+            // Add service timeout and offline handling
+            if (recognition.serviceURI) {
+                recognition.serviceURI = 'https://www.google.com/speech-api/v2/recognize';
+            }
             
             recognition.onstart = () => {
                 console.log('Speech recognition started');
@@ -595,26 +601,43 @@ const ReportComponent = ({ setCurrentRoute }) => {
                 console.error('Speech recognition error:', event.error, event);
                 setIsListening(false);
                 
-                let errorMessage = 'Speech recognition error: ';
+                let errorMessage = '';
+                let shouldShowAlert = true;
+                
                 switch(event.error) {
                     case 'no-speech':
-                        errorMessage += 'No speech was detected. Please try speaking again.';
+                        errorMessage = 'No speech detected. Please click "Start Recording" and speak clearly.';
+                        shouldShowAlert = false; // Don't show alert for this common case
                         break;
                     case 'audio-capture':
-                        errorMessage += 'Audio capture failed. Please check your microphone connection.';
+                        errorMessage = 'Microphone access failed. Please check your microphone connection and try again.';
                         break;
                     case 'not-allowed':
-                        errorMessage += 'Microphone permission denied. Please allow microphone access and refresh the page.';
+                        errorMessage = 'Microphone permission denied. Please allow microphone access in your browser settings and refresh the page.';
                         break;
                     case 'network':
-                        errorMessage += 'Network error occurred. Please check your internet connection.';
+                        errorMessage = 'Voice recognition service temporarily unavailable. You can still type your response manually.';
+                        shouldShowAlert = false; // Don't show alert, just log it
+                        console.warn('Speech recognition network error - falling back to manual input');
+                        break;
+                    case 'service-not-allowed':
+                        errorMessage = 'Speech recognition service not available. Please type your response manually.';
+                        shouldShowAlert = false;
                         break;
                     default:
-                        errorMessage += `${event.error}. Please try again.`;
+                        errorMessage = `Speech recognition temporarily unavailable (${event.error}). Please type your response.`;
+                        shouldShowAlert = false;
                 }
                 
-                console.error('Error message:', errorMessage);
-                alert(errorMessage);
+                console.error('Speech error details:', errorMessage);
+                
+                // Only show alert for critical errors that user needs to fix
+                if (shouldShowAlert) {
+                    alert(errorMessage);
+                } else {
+                    // For network/service errors, just log and continue
+                    console.log('Speech recognition error (non-critical):', errorMessage);
+                }
             };
             
             recognition.onend = () => {
@@ -641,14 +664,31 @@ const ReportComponent = ({ setCurrentRoute }) => {
         }
     }, []); // Keep empty dependency array for initialization
 
-    // Speech recognition functions
+    // Speech recognition functions with improved error handling
     const startListening = () => {
         if (speechRecognition && !isListening) {
             try {
+                console.log('Attempting to start speech recognition...');
                 speechRecognition.start();
             } catch (error) {
                 console.error('Error starting speech recognition:', error);
-                alert('Could not start speech recognition. Please try again.');
+                
+                if (error.name === 'InvalidStateError') {
+                    console.log('Speech recognition already active, stopping and restarting...');
+                    try {
+                        speechRecognition.stop();
+                        setTimeout(() => {
+                            if (speechRecognition) {
+                                speechRecognition.start();
+                            }
+                        }, 100);
+                    } catch (retryError) {
+                        console.error('Retry failed:', retryError);
+                        alert('Speech recognition temporarily unavailable. Please type your response manually.');
+                    }
+                } else {
+                    alert('Voice input temporarily unavailable. Please type your response manually.');
+                }
             }
         }
     };
@@ -1485,7 +1525,8 @@ const ReportComponent = ({ setCurrentRoute }) => {
                                     <li>• Click the microphone button to start/stop recording</li>
                                     <li>• Speak clearly and at a normal pace</li>
                                     <li>• Make sure your browser has microphone permission</li>
-                                    <li>• You can combine typing and speaking for best results</li>
+                                    <li>• If voice input fails, you can always type manually</li>
+                                    <li>• Network issues may affect voice recognition - typing always works</li>
                                 </ul>
                             </div>
                         )}

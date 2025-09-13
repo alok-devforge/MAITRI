@@ -35,6 +35,22 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Test endpoint for frontend status checking
+app.get('/test', (req, res) => {
+    const twilioConfigured = !!(
+        process.env.TWILIO_ACCOUNT_SID && 
+        process.env.TWILIO_AUTH_TOKEN && 
+        process.env.TWILIO_PHONE_NUMBER
+    );
+    
+    res.status(200).json({ 
+        message: 'MAITRI Backend is online and ready',
+        twilioConfigured: twilioConfigured,
+        timestamp: new Date().toISOString(),
+        service: 'MAITRI Backend API'
+    });
+});
+
 // 🔑 Twilio credentials from .env
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
