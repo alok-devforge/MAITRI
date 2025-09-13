@@ -4,12 +4,31 @@ import bodyParser from "body-parser";
 import twilio from "twilio";
 import dotenv from "dotenv";
 
-
 dotenv.config(); // Load variables from .env
 
 const app = express();
-app.use(cors());
+
+// CORS configuration for production
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production' 
+        ? ['https://your-frontend-domain.vercel.app', 'https://your-custom-domain.com'] 
+        : ['http://localhost:5173', 'http://localhost:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        service: 'MAITRI Backend API'
+    });
+});
 
 // 🔑 Twilio credentials from .env
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -30,10 +49,10 @@ const client = twilio(accountSid, authToken);
 
 // 📱 Registered contacts
 const registeredNumbers = [
-  "+919123605369",
-  "+919432456350",
   "+918404845135",
-
+  "+918011960221",
+  "+917407323652",
+  "+919431139936"
 ];
 
 // Test endpoint
@@ -96,8 +115,9 @@ app.post("/send-sms", async (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`✅ Backend running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Backend running on port ${PORT}`);
     console.log(`🔧 Twilio Phone Number: ${twilioPhoneNumber}`);
     console.log(`📱 Registered Numbers: ${registeredNumbers.join(', ')}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
