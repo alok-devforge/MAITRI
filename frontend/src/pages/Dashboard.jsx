@@ -505,6 +505,11 @@ const MapPage = ({ setCurrentRoute }) => (
 
 // Mock Router Component
 const Router = ({ currentRoute, setCurrentRoute }) => {
+  // Scroll to top when route changes within dashboard
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  }, [currentRoute]);
+
   // A simple switch statement to render the correct page component
   switch (currentRoute) {
     case '/alerts':
@@ -628,6 +633,11 @@ const Navigation = ({ currentRoute, setCurrentRoute, isMobileMenuOpen, setIsMobi
 const Dashboard = () => {
   const [currentRoute, setCurrentRoute] = useState('/');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Scroll to top when component mounts (when user navigates to dashboard)
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/20 to-slate-100 font-sans antialiased text-slate-900">
